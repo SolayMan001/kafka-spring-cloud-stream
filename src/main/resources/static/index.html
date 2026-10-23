@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Visites en direct | Solayman Oumouou</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="dashboard.js" defer></script>
+</head>
+<body>
+<main>
+    <header>
+        <p class="author">Solayman Oumouou</p>
+        <h1>Visites en direct</h1>
+        <p>Kafka Streams · Visites de plus de 100 ms par fenêtre de 5 secondes</p>
+    </header>
+
+    <section aria-label="Courbe des visites">
+        <div class="summary">
+            <div class="legend">
+                <span class="page p1">P1 <strong id="p1-count">–</strong></span>
+                <span class="page p2">P2 <strong id="p2-count">–</strong></span>
+            </div>
+            <p id="connection" role="status">Connexion au flux…</p>
+        </div>
+        <canvas id="visits-chart" role="img" aria-label="Historique sur 60 secondes des compteurs de P1 et P2">
+            Les compteurs actuels de P1 et P2 sont affichés au-dessus.
+        </canvas>
+        <div class="time-axis" aria-hidden="true"><span>Il y a 60 s</span><span>Maintenant</span></div>
+    </section>
+</main>
+</body>
+</html>
