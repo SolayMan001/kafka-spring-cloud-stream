@@ -9,65 +9,91 @@ const pages = ["P1", "P2"].map(name => ({
 }));
 
 const history = [];
-const historyLimit = 61;
+const visibleDuration = 12_000;
+const renderDelay = 500;
 const windowTime = new Intl.DateTimeFormat("fr-FR", { timeStyle: "medium" });
+let plot = { width: 0, height: 0 };
 
-function draw() {
-    const { width, height } = chart.getBoundingClientRect();
+function resize() {
+    plot = chart.getBoundingClientRect();
     const scale = window.devicePixelRatio || 1;
-    chart.width = Math.round(width * scale);
-    chart.height = Math.round(height * scale);
-    context.scale(scale, scale);
-
-    const left = 34;
-    const right = width - 5;
-    const top = 10;
-    const bottom = height - 10;
-    const maximum = Math.max(4, ...history.flatMap(sample => pages.map(page => sample[page.name] ?? 0)));
-    const step = Math.ceil(maximum / 4);
-    const y = count => bottom - (bottom - top) * count / (step * 4);
-
-    context.font = "12px system-ui";
-    context.textAlign = "right";
-    context.textBaseline = "middle";
-    context.fillStyle = styles.getPropertyValue("--muted").trim();
-    context.strokeStyle = styles.getPropertyValue("--line").trim();
-    context.beginPath();
-
-    for (let count = 0; count <= step * 4; count += step) {
-        const row = y(count);
-        context.fillText(String(count), left - 8, row);
-        context.moveTo(left, row);
-        context.lineTo(right, row);
-    }
-    context.stroke();
-
-    for (const page of pages) {
-        context.beginPath();
-        context.strokeStyle = page.color;
-        context.lineWidth = 2;
-        history.forEach((sample, index) => {
-            const secondsAgo = history.length - 1 - index;
-            const x = right - (right - left) * secondsAgo / (historyLimit - 1);
-            const row = y(sample[page.name] ?? 0);
-            if (index === 0) context.moveTo(x, row);
-            else context.lineTo(x, row);
-        });
-        context.stroke();
-    }
+    chart.width = Math.round(plot.width * scale);
+    chart.height = Math.round(plot.height * scale);
+    context.setTransform(scale, 0, 0, scale, 0, 0);
 }
 
-new ResizeObserver(draw).observe(chart);
-const stream = new EventSource("/analytics");
+function draw(now) {
+    const { width, height } = plot;
+    const end = now - renderDelay;
+    const start = end - visibleDuration;
+    const x = time => (time - start) * width / visibleDuration;
 
+    // Keep the sample just before the left edge so the curve enters the plot smoothly.
+    while (history.length > 1 && history[1].time < start) history.shift();
+
+    const maximum = Math.max(4, ...history.flatMap(({ counts }) => pages.map(page => counts[page.name] ?? 0)));
+    const y = count => height - 3 - (height - 6) * count / maximum;
+
+    context.fillStyle = "#000";
+    context.fillRect(0, 0, width, height);
+    context.beginPath();
+    context.strokeStyle = "#626262";
+    context.lineWidth = 1;
+    for (let tick = Math.ceil(start / 1000) * 1000; tick <= end; tick += 1000) {
+        const column = Math.round(x(tick)) + 0.5;
+        context.moveTo(column, 0);
+        context.lineTo(column, height);
+    }
+    context.moveTo(0, Math.round(height / 2) + 0.5);
+    context.lineTo(width, Math.round(height / 2) + 0.5);
+    context.stroke();
+
+    if (history.length > 0 && history.at(-1).time + 1000 >= start) {
+        for (const page of pages) {
+            const points = history.map(({ time, counts }) => [x(time), y(counts[page.name] ?? 0)]);
+            const [firstX, firstY] = points[0];
+            const line = new Path2D();
+            line.moveTo(firstX, firstY);
+            for (let index = 1; index < points.length; index++) {
+                const [previousX, previousY] = points[index - 1];
+                const [nextX, nextY] = points[index];
+                const middleX = (previousX + nextX) / 2;
+                line.bezierCurveTo(middleX, previousY, middleX, nextY, nextX, nextY);
+            }
+
+            const [, lastY] = points.at(-1);
+            const endX = x(history.at(-1).time + 1000);
+            line.lineTo(endX, lastY);
+            const fill = new Path2D(line);
+            fill.lineTo(endX, height);
+            fill.lineTo(firstX, height);
+            fill.closePath();
+            context.fillStyle = `${page.color}33`;
+            context.fill(fill);
+            context.strokeStyle = page.color;
+            context.lineWidth = 2;
+            context.stroke(line);
+        }
+    }
+
+    context.font = "12px monospace";
+    context.textAlign = "right";
+    context.fillStyle = "#fff";
+    context.fillText(String(maximum), width - 6, 14);
+    context.fillText("0", width - 6, height - 5);
+    requestAnimationFrame(draw);
+}
+
+resize();
+new ResizeObserver(resize).observe(chart);
+requestAnimationFrame(draw);
+
+const stream = new EventSource("/analytics");
 stream.onmessage = event => {
-    const snapshot = JSON.parse(event.data);
-    const { counts, windowStart } = snapshot;
+    const { counts, windowStart } = JSON.parse(event.data);
     connection.textContent = `Fenêtre ouverte à ${windowTime.format(new Date(windowStart))}`;
-    history.push(counts);
-    if (history.length > historyLimit) history.shift();
+    history.push({ time: performance.now(), counts });
     pages.forEach(page => { page.label.textContent = counts[page.name] ?? 0; });
-    draw();
 };
 
 stream.onerror = () => {

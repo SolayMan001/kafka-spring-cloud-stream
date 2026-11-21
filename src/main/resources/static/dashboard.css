@@ -1,71 +1,49 @@
 :root {
-    color-scheme: light;
-    --ink: #19243a;
-    --muted: #4b5c73;
-    --line: #dce3ec;
-    --p1: #235ac5;
-    --p2: #a14414;
     font-family: system-ui, sans-serif;
-    background: #f2f5f9;
-    color: var(--ink);
+    color: #191919;
+    background: #fff;
+    --p1: #35ef21;
+    --p2: #ff3932;
 }
-
-* { box-sizing: border-box; }
 
 main {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: clamp(24px, 5vw, 64px);
+    width: min(100%, 600px);
+    margin: 16px 0;
 }
 
-header { margin-bottom: 24px; }
-header p { margin: 0; color: var(--muted); }
-header .author { color: var(--p1); font-weight: 700; }
-
-h1 {
-    margin: 5px 0 8px;
-    font-size: clamp(2rem, 6vw, 3.25rem);
-    letter-spacing: -.045em;
-}
-
-section {
-    background: white;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: clamp(16px, 4vw, 28px);
-}
+header { margin-bottom: 16px; }
+.author { margin: 0; font-weight: 600; }
+h1 { margin: 3px 0 0; font-size: 1.5rem; }
 
 .summary, .legend, .time-axis {
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 8px 16px;
 }
 
-.summary { margin-bottom: 22px; }
+.summary { margin-bottom: 8px; }
+.page { display: inline-flex; align-items: center; gap: 5px; }
 
-.page {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 5px 10px;
-    color: var(--page-color);
+.page::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--page-color);
 }
 
-.page strong {
-    margin-left: 6px;
-    font-size: 1.15rem;
-    font-variant-numeric: tabular-nums;
-}
-
+.page strong { font-variant-numeric: tabular-nums; }
 .p1 { --page-color: var(--p1); }
 .p2 { --page-color: var(--p2); }
 #connection { margin: 0; }
-#connection, .time-axis { color: var(--muted); font-size: .875rem; }
-.time-axis { margin: 7px 5px 0 34px; }
+#connection, .time-axis { color: #515151; font-size: .875rem; }
+.time-axis { margin-top: 5px; }
 
 canvas {
     display: block;
     width: 100%;
-    height: clamp(220px, 42vw, 370px);
+    aspect-ratio: 3 / 2;
+    background: #000;
 }
